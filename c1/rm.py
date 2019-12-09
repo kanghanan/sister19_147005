@@ -2,7 +2,7 @@ from fileserver import  *
 import Pyro4
 import sys
 
-namainstance = sys.argv[1] or "fileserver"
+namainstance = sys.argv[1] or "rm"
 
 def start_without_ns():
     daemon = Pyro4.Daemon()
@@ -27,13 +27,5 @@ def start_with_ns():
     #ns.register("fileserver3", uri_fileserver)
     daemon.requestLoop()
 
-def replica():
-    uri="PYRONAME:rm@localhost:7777" #rm=replication manager
-    fserver = Pyro4.Proxy(uri)
-    return fserver
-
 if __name__ == '__main__':
-    rm=replica()
-    rm.add_server(sys.argv[1])
-    print(rm.get_serverlist())
     start_with_ns()

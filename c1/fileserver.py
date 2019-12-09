@@ -1,12 +1,15 @@
-import os
-import base64
-
+servername=''
 class FileServer(object):
     def __init__(self):
         pass
 
     def create_return_message(self,kode='000',message='kosong',data=None):
         return dict(kode=kode,message=message,data=data)
+
+    def replserver_object(self):
+        uri = "PYRONAME:repl_server@localhost:7777"
+        replserver = Pyro4.Proxy(uri)
+        return replserver
 
     def list(self):
         print("list ops")
@@ -19,7 +22,8 @@ class FileServer(object):
         except:
             return self.create_return_message('500','Error')
 
-    def create(self, name='filename000'):
+    def create(self, name='filename000',replication=1):
+        global servername
         nama='FFF-{}' . format(name)
         print("create ops {}" . format(nama))
         try:
@@ -27,9 +31,14 @@ class FileServer(object):
                 return self.create_return_message('102', 'OK','File Exists')
             f = open(nama,'wb',buffering=0)
             f.close()
+            if replication==1:
+                replserver=self.replserver_object()
+                replserver.consistency(servername,"create",name,None)
             return self.create_return_message('100','OK')
-        except:
+        except Exception as e:
+            print(e)
             return self.create_return_message('500','Error')
+
     def read(self,name='filename000'):
         nama='FFF-{}' . format(name)
         print("read ops {}" . format(nama))
@@ -40,30 +49,48 @@ class FileServer(object):
             return self.create_return_message('101','OK',contents)
         except:
             return self.create_return_message('500','Error')
-    def update(self,name='filename000',content=''):
+            
+    def update(self,name='filename000',content='',replication=1):
+        global servername
         nama='FFF-{}' . format(name)
         print("update ops {}" . format(nama))
-
+        oldcontent=content
         if (str(type(content))=="<class 'dict'>"):
             content = content['data']
         try:
             f = open(nama,'w+b')
-            f.write(content.encode())
+            content=content.encode()
+            content = base64.b64decode(content)
+            f.write(content)
             f.close()
+            if replication==1:
+                replserver=self.replserver_object()
+                replserver.consistency(servername,"update",name,oldcontent)
             return self.create_return_message('101','OK')
         except Exception as e:
             return self.create_return_message('500','Error',str(e))
 
-    def delete(self,name='filename000'):
+    def delete(self,name='filename000',replication=1):
+        global servername
         nama='FFF-{}' . format(name)
         print("delete ops {}" . format(nama))
 
         try:
             os.remove(nama)
+            if replication==1:
+                replserver=self.replserver_object()
+                replserver.consistency(servername,"delete",name,None)
             return self.create_return_message('101','OK')
         except:
             return self.create_return_message('500','Error')
 
+    def add_servername(self,server_name):
+        global servername
+        servername=server_name
+        return servername
+
+    def get_servername(self):
+        return servername
 
 
 if __name__ == '__main__':
@@ -75,5 +102,4 @@ if __name__ == '__main__':
 #    print(k.update('f2',content='wedusmu'))
 #    print(k.read('f2'))
     print(k.list())
-    #print(k.delete('f1'))
-
+#print(k.delete('f1'))
