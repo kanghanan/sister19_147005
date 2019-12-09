@@ -1,5 +1,6 @@
 import os
 import base64
+import random
 
 class FileServer(object):
     def __init__(self):
@@ -64,7 +65,40 @@ class FileServer(object):
         except:
             return self.create_return_message('500','Error')
 
+    def ping(name):
+        count=0
+        while True:
+            try:
+                ns = Pyro4.locateNS("localhost",7777)
+                count=0
+            except Exception as e:
+                count+=1
+                print("\nserver down count "+str(count))
+                if count>2:
+                    os.exit(1)
+            time.sleep(2)
+            
+    def central_heartbeat(self,client_seq,id_client):
+        global seq
+        try:
+            if seq[str(id_client)]==client_seq:
+                seq[str(id_client)]+=1
+                client_seq+=1
+                return client_seq
+        except Exception as e:
+            seq[str(id_client)]=0
+            return 0
 
+    def all_heartbeat(self,client_seq, id_client):
+        global seq
+        try:
+            if seq[str(id_client)]==client_seq:
+                seq[str(id_client)]+1
+                client_seq+=1
+                return client_seq,seq
+        except Exception as e:
+            seq[str(id_client)]=0
+            return 0, seq
 
 if __name__ == '__main__':
     k = FileServer()
